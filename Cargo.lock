@@ -2807,6 +2807,7 @@ dependencies = [
  "notify",
  "ntapi",
  "once_cell",
+ "reframe",
  "rustyline",
  "same-file",
  "serde",
@@ -7296,6 +7297,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.87",
+]
+
+[[package]]
+name = "reframe"
+version = "0.1.0"
+dependencies = [
+ "deno_core",
 ]
 
 [[package]]

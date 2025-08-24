@@ -594,6 +594,7 @@ impl MainWorker {
           options.create_web_worker_cb.clone(),
           options.format_js_error_fn.clone(),
         ),
+        reframe::reframe::args(),
       ])
       .unwrap();
 

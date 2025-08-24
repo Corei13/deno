@@ -1,0 +1,13 @@
+[package]
+name = "reframe"
+version = "0.1.0"
+edition.workspace = true
+readme = "README.md"
+repository.workspace = true
+description = "Reframe native extension for Deno"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+deno_core.workspace = true
