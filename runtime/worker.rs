@@ -589,12 +589,12 @@ impl MainWorker {
           TNpmPackageFolderResolver,
           TExtNodeSys,
         >(services.node_services, services.fs.clone()),
+        reframe::deno_reframe::args(),
         ops::runtime::deno_runtime::args(main_module.clone()),
         ops::worker_host::deno_worker_host::args(
           options.create_web_worker_cb.clone(),
           options.format_js_error_fn.clone(),
         ),
-        reframe::reframe::args(),
       ])
       .unwrap();
 
@@ -1070,6 +1070,7 @@ fn common_extensions<
       TNpmPackageFolderResolver,
       TExtNodeSys,
     >(),
+    reframe::deno_reframe::lazy_init(),
     // Ops from this crate
     ops::runtime::deno_runtime::lazy_init(),
     ops::worker_host::deno_worker_host::lazy_init(),

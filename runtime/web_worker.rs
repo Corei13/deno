@@ -590,6 +590,7 @@ impl WebWorker {
         TNpmPackageFolderResolver,
         TExtNodeSys,
       >(services.node_services, services.fs),
+      reframe::deno_reframe::init(),
       // Runtime ops that are always initialized for WebWorkers
       ops::runtime::deno_runtime::init(options.main_module.clone()),
       ops::worker_host::deno_worker_host::init(

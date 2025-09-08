@@ -95,6 +95,9 @@ import {
 import { SymbolDispose, SymbolMetadata } from "ext:deno_web/00_infra.js";
 import { bootstrap as bootstrapOtel } from "ext:deno_telemetry/telemetry.ts";
 import { nodeGlobals } from "ext:deno_node/00_globals.js";
+import Reframe from "ext:deno_reframe/01_reframe.js";
+
+globalThis.Reframe = Reframe;
 
 // deno-lint-ignore prefer-primordials
 if (Symbol.metadata) {
