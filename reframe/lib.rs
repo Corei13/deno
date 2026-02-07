@@ -1,48 +1,16 @@
-use std::sync::Arc;
+use std::borrow::Cow;
 
-use deno_ast::EmitOptions;
-use deno_ast::MediaType;
-use deno_ast::ModuleSpecifier;
-use deno_ast::ParseParams;
-use deno_ast::SourceTextInfo;
-use deno_ast::TranspileModuleOptions;
-use deno_ast::TranspileOptions;
-use deno_ast::TranspileResult;
-use deno_ast::parse_module;
 use deno_core::GarbageCollected;
 use deno_core::op2;
 
-fn transpile(path: &str, content: &str) -> TranspileResult {
-  let parsed = parse_module(ParseParams {
-    specifier: ModuleSpecifier::parse(path).unwrap(),
-    media_type: MediaType::TypeScript,
-    text: content.into(),
-    capture_tokens: false,
-    maybe_syntax: None,
-    scope_analysis: false,
-  })
-  .expect("Failed to parse module");
-
-  let transpile_options = TranspileOptions {
-    ..Default::default()
-  };
-  let transpile_module_options = TranspileModuleOptions {
-    ..Default::default()
-  };
-  let emit_options = EmitOptions {
-    remove_comments: false,
-    ..Default::default()
-  };
-  let result = parsed
-    .transpile(&transpile_options, &transpile_module_options, &emit_options)
-    .expect("Failed to transpile module");
-
-  result
-}
-
-fn analyze(path: &str, content: &str) {
-  let source = transpile(path, content).into_source();
-  dbg!(source);
+fn normalize_path(path: &str) -> Cow<'_, str> {
+  if path.contains("://") {
+    Cow::Borrowed(path)
+  } else if path.starts_with('/') {
+    Cow::Owned(format!("file://{path}"))
+  } else {
+    Cow::Owned(format!("file:///{path}"))
+  }
 }
 
 struct ReframeNS;
@@ -55,10 +23,12 @@ impl GarbageCollected for ReframeNS {
 
 #[op2]
 impl ReframeNS {
-  #[fast]
   #[static_method]
-  fn analyze(#[string] path: &str, #[string] content: &str) {
-    analyze(path, content);
+  #[string]
+  fn analyze(#[string] path: &str, #[string] content: &str, #[string] env: &str) -> String {
+    let normalized_path = normalize_path(path);
+    let result = analyze::analyze(normalized_path.as_ref(), content, env);
+    serde_json::to_string(&result).expect("failed to serialize analyze result")
   }
 }
 
