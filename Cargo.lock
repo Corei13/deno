@@ -137,9 +137,16 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 name = "analyze"
 version = "0.1.0"
 dependencies = [
+ "ast_node",
+ "deno_ast",
+ "from_variant",
  "indexmap 2.9.0",
+ "is-macro",
  "serde",
  "serde_json",
+ "string_enum",
+ "swc_macros_common 1.0.0",
+ "swc_visit",
 ]
 
 [[package]]
@@ -7315,6 +7322,7 @@ dependencies = [
  "analyze",
  "deno_ast",
  "deno_core",
+ "deno_error",
  "serde_json",
 ]
 

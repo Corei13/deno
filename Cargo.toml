@@ -430,6 +430,38 @@ opt-level = 3
 [profile.dev.package.v8]
 opt-level = 1
 
+# analyze + deno_ast/SWC are too slow unoptimized
+[profile.dev.package.analyze]
+opt-level = 3
+[profile.dev.package.deno_ast]
+opt-level = 3
+[profile.dev.package.swc_ecma_parser]
+opt-level = 3
+[profile.dev.package.swc_ecma_codegen]
+opt-level = 3
+[profile.dev.package.swc_ecma_transforms_base]
+opt-level = 3
+[profile.dev.package.swc_ecma_transforms_typescript]
+opt-level = 3
+[profile.dev.package.swc_ecma_transforms_proposal]
+opt-level = 3
+[profile.dev.package.swc_ecma_transforms_react]
+opt-level = 3
+[profile.dev.package.swc_ecma_ast]
+opt-level = 3
+[profile.dev.package.swc_common]
+opt-level = 3
+[profile.dev.package.swc_ecma_visit]
+opt-level = 3
+[profile.dev.package.swc_ecma_utils]
+opt-level = 3
+[profile.dev.package.serde]
+opt-level = 3
+[profile.dev.package.serde_json]
+opt-level = 3
+[profile.dev.package.indexmap]
+opt-level = 3
+
 [profile.release.package.async-compression]
 opt-level = 3
 [profile.release.package.base64-simd]
