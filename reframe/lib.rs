@@ -18,6 +18,8 @@ struct ThreadConfig {
 
 static CONFIG: OnceLock<ThreadConfig> = OnceLock::new();
 static RAYON_POOL: OnceLock<rayon::ThreadPool> = OnceLock::new();
+static SPAWN_SEMAPHORE: OnceLock<tokio::sync::Semaphore> =
+  OnceLock::new();
 
 fn normalize_path(path: &str) -> Cow<'_, str> {
   if path.contains("://") {
@@ -103,13 +105,21 @@ async fn op_reframe_analyze(
   }
 
   match config().strategy {
-    Strategy::Spawn => tokio::task::spawn_blocking(move || {
-      do_analyze(&path, &content, &env)
-    })
-    .await
-    .map_err(|error| {
-      JsErrorBox::generic(format!("reframe analyze task failed: {error}"))
-    })?,
+    Strategy::Spawn => {
+      let semaphore = SPAWN_SEMAPHORE.get_or_init(|| {
+        tokio::sync::Semaphore::new(config().max_threads.max(1))
+      });
+      let _permit = semaphore.acquire().await.map_err(|error| {
+        JsErrorBox::generic(format!("reframe semaphore closed: {error}"))
+      })?;
+      tokio::task::spawn_blocking(move || {
+        do_analyze(&path, &content, &env)
+      })
+      .await
+      .map_err(|error| {
+        JsErrorBox::generic(format!("reframe analyze task failed: {error}"))
+      })?
+    },
     Strategy::Rayon => {
       let (tx, rx) = oneshot::channel();
       let pool = RAYON_POOL.get_or_init(|| {
