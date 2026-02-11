@@ -10,8 +10,10 @@ description = "Reframe native extension for Deno"
 path = "lib.rs"
 
 [dependencies]
+analyze = { path = "../../reframe/crates/analyze" }
 deno_ast.workspace = true
 deno_core.workspace = true
 deno_error.workspace = true
+rayon.workspace = true
 serde_json.workspace = true
-analyze = { path = "../../reframe/crates/analyze" }
+tokio.workspace = true
