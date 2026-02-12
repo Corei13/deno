@@ -35,9 +35,10 @@ fn do_analyze(
   path: &str,
   content: &str,
   env: &str,
+  minify: bool,
 ) -> Result<String, JsErrorBox> {
   let normalized_path = normalize_path(path);
-  let result = analyze::analyze(normalized_path.as_ref(), content, env)
+  let result = analyze::analyze(normalized_path.as_ref(), content, env, minify)
     .map_err(JsErrorBox::generic)?;
   serde_json::to_string(&result).map_err(JsErrorBox::from_err)
 }
@@ -88,8 +89,9 @@ impl ReframeNS {
     #[string] path: &str,
     #[string] content: &str,
     #[string] env: &str,
+    minify: bool,
   ) -> Result<String, JsErrorBox> {
-    do_analyze(path, content, env)
+    do_analyze(path, content, env, minify)
   }
 }
 
@@ -99,9 +101,10 @@ async fn op_reframe_analyze(
   #[string] path: String,
   #[string] content: String,
   #[string] env: String,
+  minify: bool,
 ) -> Result<String, JsErrorBox> {
   if config().max_threads == 0 {
-    return do_analyze(&path, &content, &env);
+    return do_analyze(&path, &content, &env, minify);
   }
 
   match config().strategy {
@@ -113,7 +116,7 @@ async fn op_reframe_analyze(
         JsErrorBox::generic(format!("reframe semaphore closed: {error}"))
       })?;
       tokio::task::spawn_blocking(move || {
-        do_analyze(&path, &content, &env)
+        do_analyze(&path, &content, &env, minify)
       })
       .await
       .map_err(|error| {
@@ -130,7 +133,7 @@ async fn op_reframe_analyze(
       });
 
       pool.spawn(move || {
-        let result = do_analyze(&path, &content, &env);
+        let result = do_analyze(&path, &content, &env, minify);
         let _ = tx.send(result);
       });
       rx.await.map_err(|error| {
