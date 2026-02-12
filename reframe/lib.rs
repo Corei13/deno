@@ -21,6 +21,8 @@ static RAYON_POOL: OnceLock<rayon::ThreadPool> = OnceLock::new();
 static SPAWN_SEMAPHORE: OnceLock<tokio::sync::Semaphore> =
   OnceLock::new();
 
+const DEFAULT_RUST_MIN_STACK: usize = 8 * 1024 * 1024;
+
 fn normalize_path(path: &str) -> Cow<'_, str> {
   if path.contains("://") {
     Cow::Borrowed(path)
@@ -51,6 +53,11 @@ fn default_threads() -> usize {
 
 fn config() -> &'static ThreadConfig {
   CONFIG.get_or_init(|| {
+    if std::env::var_os("RUST_MIN_STACK").is_none() {
+      // SAFETY: set once during lazy config initialization before analyze worker pools are created.
+      unsafe { std::env::set_var("RUST_MIN_STACK", DEFAULT_RUST_MIN_STACK.to_string()) };
+    }
+
     let strategy = match std::env::var("REFRAME_THREAD_STRATEGY")
       .ok()
       .map(|value| value.trim().to_ascii_lowercase())
