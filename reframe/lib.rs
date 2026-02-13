@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::sync::OnceLock;
 
-use deno_core::GarbageCollected;
 use deno_core::op2;
 use deno_error::JsErrorBox;
 use tokio::sync::oneshot;
@@ -80,28 +79,6 @@ fn config() -> &'static ThreadConfig {
   })
 }
 
-struct ReframeNS;
-
-impl GarbageCollected for ReframeNS {
-  fn get_name(&self) -> &'static std::ffi::CStr {
-    c"ReframeNS"
-  }
-}
-
-#[op2]
-impl ReframeNS {
-  #[static_method]
-  #[string]
-  fn analyze(
-    #[string] path: &str,
-    #[string] content: &str,
-    #[string] env: &str,
-    minify: bool,
-  ) -> Result<String, JsErrorBox> {
-    do_analyze(path, content, env, minify)
-  }
-}
-
 #[op2(async)]
 #[string]
 async fn op_reframe_analyze(
@@ -153,6 +130,5 @@ async fn op_reframe_analyze(
 deno_core::extension!(
   deno_reframe,
   ops = [op_reframe_analyze],
-  objects = [ReframeNS],
   esm = ["01_reframe.js"]
 );
