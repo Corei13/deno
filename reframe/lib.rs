@@ -3,20 +3,12 @@ use std::sync::OnceLock;
 
 use deno_core::op2;
 use deno_error::JsErrorBox;
-use tokio::sync::oneshot;
-
-enum Strategy {
-  Spawn,
-  Rayon,
-}
 
 struct ThreadConfig {
-  strategy: Strategy,
   max_threads: usize,
 }
 
 static CONFIG: OnceLock<ThreadConfig> = OnceLock::new();
-static RAYON_POOL: OnceLock<rayon::ThreadPool> = OnceLock::new();
 static SPAWN_SEMAPHORE: OnceLock<tokio::sync::Semaphore> =
   OnceLock::new();
 
@@ -57,25 +49,12 @@ fn config() -> &'static ThreadConfig {
       unsafe { std::env::set_var("RUST_MIN_STACK", DEFAULT_RUST_MIN_STACK.to_string()) };
     }
 
-    let strategy = match std::env::var("REFRAME_THREAD_STRATEGY")
-      .ok()
-      .map(|value| value.trim().to_ascii_lowercase())
-      .as_deref()
-    {
-      Some("rayon") => Strategy::Rayon,
-      Some("spawn") | None => Strategy::Spawn,
-      Some(_) => Strategy::Spawn,
-    };
-
     let max_threads = std::env::var("REFRAME_MAX_THREADS")
       .ok()
       .and_then(|value| value.trim().parse::<usize>().ok())
       .unwrap_or_else(default_threads);
 
-    ThreadConfig {
-      strategy,
-      max_threads,
-    }
+    ThreadConfig { max_threads }
   })
 }
 
@@ -91,40 +70,20 @@ async fn op_reframe_analyze(
     return do_analyze(&path, &content, &env, minify);
   }
 
-  match config().strategy {
-    Strategy::Spawn => {
-      let semaphore = SPAWN_SEMAPHORE.get_or_init(|| {
-        tokio::sync::Semaphore::new(config().max_threads.max(1))
-      });
-      let _permit = semaphore.acquire().await.map_err(|error| {
-        JsErrorBox::generic(format!("reframe semaphore closed: {error}"))
-      })?;
-      tokio::task::spawn_blocking(move || {
-        do_analyze(&path, &content, &env, minify)
-      })
-      .await
-      .map_err(|error| {
-        JsErrorBox::generic(format!("reframe analyze task failed: {error}"))
-      })?
-    },
-    Strategy::Rayon => {
-      let (tx, rx) = oneshot::channel();
-      let pool = RAYON_POOL.get_or_init(|| {
-        rayon::ThreadPoolBuilder::new()
-          .num_threads(config().max_threads.max(1))
-          .build()
-          .expect("failed to create reframe rayon thread pool")
-      });
+  let semaphore = SPAWN_SEMAPHORE.get_or_init(|| {
+    tokio::sync::Semaphore::new(config().max_threads.max(1))
+  });
+  let _permit = semaphore.acquire().await.map_err(|error| {
+    JsErrorBox::generic(format!("reframe semaphore closed: {error}"))
+  })?;
 
-      pool.spawn(move || {
-        let result = do_analyze(&path, &content, &env, minify);
-        let _ = tx.send(result);
-      });
-      rx.await.map_err(|error| {
-        JsErrorBox::generic(format!("reframe analyze worker failed: {error}"))
-      })?
-    },
-  }
+  tokio::task::spawn_blocking(move || {
+    do_analyze(&path, &content, &env, minify)
+  })
+  .await
+  .map_err(|error| {
+    JsErrorBox::generic(format!("reframe analyze task failed: {error}"))
+  })?
 }
 
 deno_core::extension!(

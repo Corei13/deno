@@ -7799,7 +7799,6 @@ dependencies = [
  "deno_ast",
  "deno_core",
  "deno_error",
- "rayon",
  "serde_json",
  "tokio",
 ]
